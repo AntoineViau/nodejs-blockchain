@@ -19,7 +19,7 @@ let launchServer = () => {
             switch (data.action) {
                 case 'getPeers':
                     log('REQUEST: getPeers');
-                    peers.addPeer({
+                    p2p.addPeer({
                         id: data.origin
                     })
                     res.end(JSON.stringify(p2p.getPeers()));

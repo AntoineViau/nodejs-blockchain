@@ -49,7 +49,7 @@ loadKnownPeers = () => {
 }
 
 askPeersOf = (peer) => {
-    log('Ask peers of ' + peer.id);
+    log('Ask peers list of ' + peer.id);
     return request.send(peer, { action: "getPeers" })
         .catch(() => {
             log('Peer ' + peer.id + ' is not available');
