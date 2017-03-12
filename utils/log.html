@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style type="text/css">
+    body { font-family: sans-serif; font-size: 12px; }
+    .node { width: 25%; height: 200px; margin: 10px; border: 1px solid; float: left; overflow: scroll;    }
+    .node-title { background: black; color: white; padding: 5px; text-align: right; font-weight: bold; font-size: 16px; }
+    </style>
+</head>
+
+<body>
+
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js" crossorigin="anonymous"></script>
+
+    <script type="text/javascript">
+
+        var nodes = new Array();
+
+        refresh = () => {
+            setInterval(() => {
+                var init = { method: 'GET', headers: new Headers(), cache: 'default' };
+                var request = new Request('http://127.0.0.1:2502', init);
+                fetch(request, init)
+                    .then(res => res.json())
+                    .then(newLogs => {
+                        console.log('Received : ' + newLogs);
+                        addNewNodes(newLogs);
+                        dispatchLogs(newLogs);
+                    });
+
+            }, 1000);
+        };
+
+        addNewNodes = (logs) => {
+            let nodesIds = Array.from(new Set(logs.map(log => log.from)));
+            nodesIds.forEach(nodeId => {
+                if (!nodes[nodeId]) {
+                    let elmt = $('<div class="node"><div class="node-title">Node '+nodeId+'</div></div>');
+                    $(document.body).append(elmt);
+                    nodes[nodeId] = { from: nodeId, logs: [], elmt };
+                }
+            });
+        };
+
+        dispatchLogs = (logs) => {
+            logs.forEach(log => {
+                $(nodes[log.from].elmt).append('<div class="log">' + log.log + '</div>');
+            });
+        };
+
+        $(document).ready(() => {
+            refresh();
+        });
+    </script>
+</body>
+
+</html>
