@@ -7,9 +7,9 @@ Fabriquer sa propre blockchain en NodeJs en utilisant un process naïf et itéra
  * et on recommence
 
 ## Problème de base 
-Quand des entités (personnes, sociétés, administrations, etc.) s'entendent sur une relation entre elles, elle doivent généralement passer par un tiers de confiance.
-Exemple : transférer de l'argent d'une personne A à une personne B implique une banque en tant que tiers de confiance. A et B font confiance à la banque pour s'assurer que le transfert sera valide. La banque vérifiera les identités de A et B, le solde de B, procèdera au transfert, mettra à jour le compte de B, etc.
-Dans ce système le tiers détient un pouvoir considérable. Comment faire pour ne plus avoir à passer par un tiers ?
+Quand des entités (personnes, sociétés, administrations, etc.) s'entendent sur une relation entre elles, elle doivent généralement passer par un tiers de confiance.  
+Exemple : transférer de l'argent d'une personne A à une personne B implique une banque en tant que tiers de confiance. A et B font confiance à la banque pour s'assurer que le transfert sera valide. La banque vérifiera les identités de A et B, le solde de B, procèdera au transfert, mettra à jour le compte de B, etc.  
+Dans ce système le tiers détient un pouvoir considérable. Comment faire pour ne plus avoir à passer par un tiers ?  
 Passer par une blockchain !
 
 ## Principes de base d'une blockchain 
@@ -28,8 +28,8 @@ En les remplaçant par une blockchain bien sûr !
 Notre objectif est donc de pouvoir manipuler une monnaie au travers d'un grand livre partagé, maintenu et surveillé par un réseau. 
 
 ## Mise en place du réseau
-Chaque machine du réseau possède une liste des autres machines (les _peers_) qu'elle connaît. Lors de son entrée sur le réseau, la liste de peers est vide. Nous utiliserons donc un _Peer Zero_ pour obtenir une première liste. Cela fait, notre machine se connectera aux peers, et récupèrera leurs listes. Et bien sûr, elle mettra à disposition de qui elle veut sa propre liste.  
-Pour se simplifier la vie en terme de connexions réseau, nous passerons par le protocole HTTP et nous travaillerons en local avec des processus sur des ports différents à partir du port 5000.  Ainsi, le Peer Zero sera lancé sur le port 5000, et les peers suivant iront sur les ports suivants : 5001, 5016, 5789, etc. (pas forcément séquentiel).
+Chaque machine du réseau possède une liste des autres machines (les _peers_) qu'elle connaît. Lors de son entrée sur le réseau, la liste de peers est vide. Nous utiliserons donc un _Peer Zero_ pour obtenir une première liste. Cela fait, notre machine se connectera aux peers, et récupèrera leurs listes. Et bien sûr, elle mettra à disposition de qui elle veut sa propre liste.    
+Pour se simplifier la vie en terme de connexions réseau, nous passerons par le protocole HTTP et nous travaillerons en local avec des processus sur des ports différents à partir du port 5000.  Ainsi, le Peer Zero sera lancé sur le port 5000, et les peers suivant iront sur les ports suivants : 5001, 5016, 5789, etc. (pas forcément séquentiel).  
 L'idée est de remplacer l'adresse IP par le port afin de pouvoir installer tout un réseau sur une seule machine avec une seule carte réseau.  
 Donc pour lancer un peer : 
 
