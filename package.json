@@ -10,9 +10,12 @@
     "request": "^2.81.0",
     "request-promise-native": "^1.0.3"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "jasmine": "^2.5.3"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "proxy": "node utils/proxy.js",
+    "test": "jasmine"
   },
   "repository": {
     "type": "git",
