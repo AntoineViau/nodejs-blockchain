@@ -20,7 +20,7 @@
         refresh = () => {
             setInterval(() => {
                 var init = { method: 'GET', headers: new Headers(), cache: 'default' };
-                var request = new Request('http://127.0.0.1:2502', init);
+                var request = new Request('http://127.0.0.1:4002', init);
                 fetch(request, init)
                     .then(res => res.json())
                     .then(newLogs => {
