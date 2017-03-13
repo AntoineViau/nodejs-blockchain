@@ -37,6 +37,16 @@ Donc pour lancer un peer :
 
     node peer.js [port]
 
+## Simuler une banque
+Nous avons un réseau qui se maintient à peu près tout seul. A présent il nous faut le livre. Mais que mettre dedans ?
+Notre approche naïve nous amène à simplement vouloir "faire la banque" telle que nous la connaissons.  
+Nous écrirons donc des "comptes" dans le livre : 
+
+ * un numéro d'identification
+ * un solde
+
+Une opération de transfert/paiement consistera donc en la modification de deux comptes.  
+Par ailleurs, pour nous simplifier la vie chaque peer ne disposera que d'un seul compte.
 
 
 
