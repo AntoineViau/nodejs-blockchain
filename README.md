@@ -46,10 +46,54 @@ Nous écrirons donc des "comptes" dans le livre :
  * un solde
 
 Une opération de transfert/paiement consistera donc en la modification de deux comptes.  
-Par ailleurs, pour nous simplifier la vie chaque peer ne disposera que d'un seul compte.
+Par ailleurs, pour nous simplifier la vie chaque peer ne disposera que d'un seul compte.  
+Nous avons donc besoin d'un livre, autrement dit : une base de données.  
+A ce stade, un simple fichier JSON fera l'affaire : 
 
+	[
+		{ accountId: "12345", balance: 100},
+		{ accountId: "98765", balance: 250},
+		{ accountId: "49875", balance: 123},
+	]
 
+Côté protocole, même chose : 
 
+	{ operation: "move", from: "1111", to: "2222", amount: 25 }
 
+## Synchronisation 
+Nous voulons maintenir la même copie sur l'ensemble du réseau. Pour cela, les peers vont s'échanger en permanence l'état de leur livre. Quand un peer voit une version plus récente que la sienne, il la télécharge. Pour ne pas avoir à gérer la notion de temps pour déterminer la dernière version, on passe par un compteur de transactions plutôt qu'un timestamp. Notre base devient donc : 
+
+	nbTransactions: 42,
+	accounts: [
+		{ accountId: "12345", balance: 100},
+		{ accountId: "98765", balance: 250},
+		{ accountId: "49875", balance: 123},
+	]
+
+Comme nous allons le voir, ça ne fonctionne pas du tout. Mais mettons cela de côté pour le moment.
+
+## Authentification
+Nous avons donc un réseau peer-to-peer et une base de données synchronisée. A présent, lorsque quelqu'un veut faire un transfert d'argent, il va modifier son compte et celui du destinataire. Comment s'assurer que celui qui provoque le transfert est bien le propriétaire du compte ?  
+Avec un login et un mot de passe ?  
+Mais qui va alors gérer la base de couples login/password ? Et où serait-elle stockée ?  
+Il ne sert à rien de les mettre dans la même base que les comptes puisque c'est une base publique, partagée et synchronisée. Donc tout le monde connaîtrait les mots de passe ou leurs versions hashées.
+Confier la base à une entité tierce invalide totalement tout le concept de notre blockchain décentralisée. 
+
+La solution réside dans les principes de la cryptographie asymétrique : 
+
+ * On crée deux clefs : A et B
+ * Ce qui est chiffré avec A peut être déchiffré avec B
+ * Et inversement, ce qui est chiffré avec B peut être déchiffré avec A
+
+On peut donc décider d'avoir une clef connue par tout le monde - la *clef publique* - et une clef connue uniquement par son propriétaire - la *clef privée*. A partir de là, nous disposons d'une solution :
+
+  * A la création de chaque compte nous allons générer un couple clefs privée/publique
+  * La clef publique du compte va être stockée dans la base
+  * Imaginons qu'Alice veut dépenser de l'argent de son compte
+  * Pour cela celle écrit un message : "moi Alice, propriétaire du compte 1234 je veux transférer 25 au compte 5678"
+  * Elle chiffre son message avec sa clef privée
+  * Elle envoie au réseau le message en clair et en chiffré 
+  * Le réseau reçoit les deux versions et déchiffre la version chiffrée avec la clef publique de compte
+  * Si le résultat du déchiffrage correspond à la version en clair, cela prouve que c'est bien Alice qui a écrit ce message avec sa clef privée.
 
 
