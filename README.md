@@ -8,7 +8,7 @@ Fabriquer sa propre blockchain en NodeJs en utilisant un process naïf et itéra
  * on corrige les failles et éventuellement on change tout
  * et on recommence
 
-## Problème de base 
+## Pourquoi une Blockchain ? 
 Quand des entités (personnes, sociétés, administrations, etc.) s'entendent sur une relation entre elles, elle doivent généralement passer par un tiers de confiance.  
 Exemple : transférer de l'argent d'une personne A à une personne B implique une banque en tant que tiers de confiance. A et B font confiance à la banque pour s'assurer que le transfert sera valide. La banque vérifiera les identités de A et B, le solde de B, procèdera au transfert, mettra à jour le compte de B, etc.  
 Dans ce système le tiers détient un pouvoir considérable. Comment faire pour ne plus avoir à passer par un tiers ?  
