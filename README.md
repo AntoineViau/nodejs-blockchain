@@ -1,24 +1,24 @@
 # Fabriquer sa propre BlockChain avec NodeJS
 
 ## Objectif 
-Fabriquer sa propre blockchain en NodeJs en utilisant un process naïf et itératif : 
+Fabriquer sa propre BlockChain en NodeJs en utilisant un process naïf et itératif : 
 
  * on met en place une solution simple
  * on observe ses failles
  * on corrige les failles et éventuellement on change tout
  * et on recommence
 
-## Pourquoi une Blockchain ? 
+## Pourquoi une BlockChain ? 
 Quand des entités (personnes, sociétés, administrations, etc.) s'entendent sur une relation entre elles, elle doivent généralement passer par un tiers de confiance.  
 Exemple : transférer de l'argent d'une personne A à une personne B implique une banque en tant que tiers de confiance. A et B font confiance à la banque pour s'assurer que le transfert sera valide. La banque vérifiera les identités de A et B, le solde de B, procèdera au transfert, mettra à jour le compte de B, etc.  
 Dans ce système le tiers détient un pouvoir considérable. Comment faire pour ne plus avoir à passer par un tiers ?  
-Passer par une blockchain !
+Passer par une BlockChain !
 
-## Principes de base d'une blockchain 
-Une blockchain est **un grand livre** dans lequel tout le monde peut écrire. Ce qui est écrit fait office de vérité : comptes bancaires, contrats, cadastres, etc.  
-Le livre est **partagé, maintenu et surveillé** non plus par un tiers, mais **par un réseau** constitué par tous ceux qui ont intérêt dans cette blockchain. Cet intérêt peut provenir de diverses sources : opinions politiques, opportunités commerciales, rémunération, etc. Le livre est donc présent sur tous les noeuds du réseau. L'important est que tout le monde possède une même version valide, car c'est elle qui fera office de vérité. Une version différente (manipulée !) doit donc être rejetée par le réseau.  
+## Principes de base d'une BlockChain 
+Une BlockChain est **un grand livre** dans lequel tout le monde peut écrire. Ce qui est écrit fait office de vérité : comptes bancaires, contrats, cadastres, etc.  
+Le livre est **partagé, maintenu et surveillé** non plus par un tiers, mais **par un réseau** constitué par tous ceux qui ont intérêt dans cette BlockChain. Cet intérêt peut provenir de diverses sources : opinions politiques, opportunités commerciales, rémunération, etc. Le livre est donc présent sur tous les noeuds du réseau. L'important est que tout le monde possède une même version valide, car c'est elle qui fera office de vérité. Une version différente (manipulée !) doit donc être rejetée par le réseau.  
 
-Exemple de blockchain sur contrat : la société A et la société B contractualisent une opération (vente, service, partenariat...). Le contrat est écrit et signé dans le livre par A, et si B est d'accord avec les termes, il le signe dans le livre. Le réseau s'occupe de s'assurer que :
+Exemple de BlockChain sur contrat : la société A et la société B contractualisent une opération (vente, service, partenariat...). Le contrat est écrit et signé dans le livre par A, et si B est d'accord avec les termes, il le signe dans le livre. Le réseau s'occupe de s'assurer que :
  * A et B sont ceux qu'ils prétendent être
  * ni A, ni B, ni personne ne peut modifier le contrat
 
@@ -26,7 +26,7 @@ Exemple de blockchain sur contrat : la société A et la société B contractual
 Une monnaie est juste une unité qui permet de réprésenter une valeur lié à des produits ou services. Nous utilisons la monnaie via des tiers de confiance imposés : les états et les banques. Les états créent la monnaie à leur guise : Banque Centrale Européenne, Federal Reserve américaine... Les banques commerciales fournissent les outils pour manipuler la monnaie : virements, chéquiers, cartes bancaires, mais aussi prêts, placements, etc.   
 
 Comment faire pour se passer des états et des banques ?  
-En les remplaçant par une blockchain bien sûr !
+En les remplaçant par une BlockChain bien sûr !
 Notre objectif est donc de pouvoir manipuler une monnaie au travers d'un grand livre partagé, maintenu et surveillé par un réseau. 
 
 ## Mise en place du réseau
@@ -99,7 +99,7 @@ Nous avons donc un réseau peer-to-peer et une base de données synchronisée. A
 Avec un login et un mot de passe ?  
 Mais qui va alors gérer la base de couples login/password ? Et où serait-elle stockée ?  
 Il ne sert à rien de les mettre dans la même base que les comptes puisque c'est une base publique, partagée et synchronisée. Donc tout le monde connaîtrait les mots de passe. Et même si nous les hashons, ça resterait trop limite au niveau sécurité.  
-Et bien sûr, confier la base à une entité tierce invalide totalement tout le concept de notre blockchain décentralisée. 
+Et bien sûr, confier la base à une entité tierce invalide totalement tout le concept de notre BlockChain décentralisée. 
 
 La solution réside dans les principes de la cryptographie asymétrique : 
 
