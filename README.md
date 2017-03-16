@@ -119,7 +119,7 @@ On peut donc décider d'avoir une clef connue par tout le monde - la *clef publi
   * Si le résultat du déchiffrage correspond à la version en clair, cela prouve que c'est bien Alice qui a écrit ce message avec sa clef privée.
   * Et donc qu'elle est bien propriétaire de ce compte et habilitée à en dépenser de l'argent
   
-## Commandes
+## Commandes 
 Notre réseau est en place, notre base de données aussi, il reste à pouvoir faire des transferts d'argent.  
 Nous partons du principe que chaque peer possède un seul compte et que seul son propriétaire peut transférer de l'argent. Un peer doit donc être en mesure de recevoir une commande lui disant d'opérer un transfert. Comme vu précédemment, nous allons utiliser le même port utilisé pour les échanges entre peers. Afin de simplifier ce projet, nous allons supposer que les commandes sont toujours issues par le propriétaire du peer en question.  
 Si vous avions voulu protéger, nous aurions pu utiliser la sécurité des clefs asymétriques :
@@ -138,5 +138,12 @@ Niveau user-interface on fera de simple requête avec CURL à notre peer pour ef
 	# pour un montant de 25
 	curl 127.0.0.1:5123 --data '{"operation": "doTransaction", "accountId": "1234", "amount": 25}'
 
-## Premiers problèmes
+## Dépenser de l'argent
+Le peer reçoit donc un ordre de transfert. Il vérifie dans sa version du livre que l'opération est possible : le compte destination existe-t'il ? les fonds sont-ils suffisants ?  
+Si le transfert est valide, il est effectué dans son livre. Il lui reste alors à informer les noeuds du réseau qu'il a une nouvelle version à leur fournir. Evidemment, on ne va pas envoyer l'intégralité de la base de données : elle va s'alourdir avec le nombre d'utilisateurs jusqu'à très probablement devenir impraticable.  
+On peut alors envoyer un diff/patch de la base. Ce qui revient en fait à envoyer une simple transaction ! 
 
+Donc un peer reçoit une transaction, la valide et la renvoie au réseau, ie à tous ses peers.
+Lorsqu'un peer reçoit une nouvelle transaction, il procède de la même façon. A bout du compte chacun à la même version du livre.
+
+## Premiers problèmes
