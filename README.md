@@ -109,7 +109,7 @@ La solution réside dans les principes de la cryptographie asymétrique :
 
 On peut donc décider d'avoir une clef connue par tout le monde - la *clef publique* - et une clef connue uniquement par son propriétaire - la *clef privée*. A partir de là, nous disposons d'une solution :
 
-  * Au tout premier lancement d'un peer nous allons générer un couple clefs privée/publique
+  * Au tout premier lancement d'un peer nous allons générer un couple clefs privée/publique et créé un compte
   * La clef publique va être stockée avec le compte dans la base (partagée et synchronisée)
   * Imaginons qu'Alice veut dépenser de l'argent de son compte
   * Pour cela celle écrit un message : "moi Alice, propriétaire du compte 1234 je veux transférer 25 au compte 5678"

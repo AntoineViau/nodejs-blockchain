@@ -1,14 +1,27 @@
+let Promise = require("bluebird");
+let readFile = Promise.promisify(require("fs").readFile);
+let writeFile = Promise.promisify(require("fs").writeFile);
+
 let domain = 256;
+let _keys = {};
 
 module.exports = {
 
     generateKeys: () => {
-        let pub = Math.floor(Math.random() * domain);
+        let pub = 1 + parseInt(global.id); //Math.floor(Math.random() * domain);
         let priv = domain - pub;
         return {
             priv,
             pub
         };
+    },
+    generateAndSaveKeys: () => {
+        let keys = module.exports.generateKeys();
+        return writeFile('./data/' + global.id + '-keys.json', JSON.stringify(keys), 'utf8');
+    },
+    loadKeys: () => {
+        return readFile('./data/' + global.id + '-keys.json', 'utf8')
+            .then(content => JSON.parse(content));
     },
     crypt: (text, key) => {
         return Array.from(text).map(c => (c.charCodeAt(0) + key) % domain).map(code => String.fromCharCode(code)).join('');

@@ -17,7 +17,9 @@ module.exports = {
     },
     saveAccounts: () => {
         log('Save accounts');
-        return writeFile('./data/' + global.id + '-trdb.json', JSON.stringify(_accounts), 'utf8');
+        return writeFile('./data/' + global.id + '-db.json', JSON.stringify(_accounts), 'utf8');
     },
-    getAccounts: () => _accounts
+    createAccount: (publicKey) => _accounts.accounts.push({ id: global.id, balance: 100, publicKey: publicKey }),
+    getAccounts: () => _accounts,
+    getAccount: accountId => _accounts.find(a => a.id === accountId)
 };

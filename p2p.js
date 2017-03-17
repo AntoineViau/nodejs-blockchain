@@ -9,10 +9,9 @@ module.exports = {
     updatePeers: () => {
         log('Update peers');
         return loadKnownPeers()
-            .then(knownPeers => {
-                knownPeers.forEach(peer => addPeer(peer));
+            .then(knownPeers => {                
                 return Promise.each(
-                    knownPeers.map(knowPeer => askPeersOf(knowPeer)),
+                    knownPeers.filter(knownPeer => knownPeer.id != global.id).map(knowPeer => askPeersOf(knowPeer)),
                     peers => peers.forEach(peer => addPeer(peer))
                 );
             })
@@ -43,8 +42,10 @@ module.exports = {
 };
 
 loadKnownPeers = () => {
-    return readFile('./data/'+global.id + '-peers.json', 'utf8')
+    return readFile('./data/' + global.id + '-peers.json', 'utf8')
         .then(content => JSON.parse(content))
+        .then(knownPeers => knownPeers.forEach(peer => addPeer(peer)))
+        // Aucun peer connu, on force au Peer Zero
         .catch(() => [{ id: '0' }]);
 }
 
@@ -58,7 +59,7 @@ askPeersOf = (peer) => {
 };
 
 addPeer = (peer) => {
-    if (!_peers.find(p => p.id === peer.id)) {
+    if (!_peers.find(p => p.id === peer.id) && peer.id !== global.id) {
         _peers.push({ id: peer.id });
         log('Peer ' + peer.id + ' added');
     }
@@ -66,12 +67,12 @@ addPeer = (peer) => {
 
 savePeers = () => {
     log('Save peers');
-    return writeFile('./data/'+global.id + '-peers.json', JSON.stringify(_peers), 'utf8');
+    return writeFile('./data/' + global.id + '-peers.json', JSON.stringify(_peers), 'utf8');
 };
 
 askNbTransactionsOf = (peer) => {
     log('Ask nb transactions to ' + peer.id);
-    return request.send(peer.id, { action: 'getNbTransactions' })
+    return request.send(peer.id, { operation: 'getNbTransactions' })
         .catch(() => 0);
 };
 
