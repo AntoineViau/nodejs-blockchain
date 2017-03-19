@@ -17,6 +17,8 @@ function launch(id) {
 }
 
 launch(0);
-(new Array(nbPeers-1)).fill(null).map((val, index) => {
-    setTimeout(() => launch(index + 1), Math.floor(2000 + Math.random() * 2000))
-});
+(new Array(nbPeers - 1)).fill(null).reduce((prev, cur, index) => {
+    let delay = prev + Math.floor(1000 + Math.random() * 1000);
+    setTimeout(() => launch(index + 1), delay);
+    return delay;
+}, 0);
