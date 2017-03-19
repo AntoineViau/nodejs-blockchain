@@ -6,12 +6,12 @@ let log = require('./utils/log.js');
 let _peers = [];
 
 module.exports = {
-    updatePeers: () => {
+    updatePeersList: () => {
         log('Update peers');
         return loadKnownPeers()
-            .then(knownPeers => {                
+            .then(knownPeers => {
                 return Promise.each(
-                    knownPeers.filter(knownPeer => knownPeer.id != global.id).map(knowPeer => askPeersOf(knowPeer)),
+                    knownPeers.filter(knownPeer => knownPeer.id !== global.id).map(knowPeer => askPeersOf(knowPeer)),
                     peers => peers.forEach(peer => addPeer(peer))
                 );
             })
@@ -28,10 +28,11 @@ module.exports = {
     getUpToDatePeer: () => {
         log('Get up to date peer');
         let max = -1;
-        let upToDatePeer;
+        let upToDatePeer = undefined;
         return Promise.each(
             _peers.map(peer => askNbTransactionsOf(peer)),
             (nbTransactions, index) => {
+                upToDatePeer = upToDatePeer || _peers[index];
                 if (nbTransactions > max) {
                     max = nbTransactions;
                     upToDatePeer = _peers[index];
@@ -44,14 +45,17 @@ module.exports = {
 loadKnownPeers = () => {
     return readFile('./data/' + global.id + '-peers.json', 'utf8')
         .then(content => JSON.parse(content))
-        .then(knownPeers => knownPeers.forEach(peer => addPeer(peer)))
+        .then(knownPeers => {
+            knownPeers.forEach(peer => addPeer(peer))
+            return knownPeers;
+        })
         // Aucun peer connu, on force au Peer Zero
         .catch(() => [{ id: '0' }]);
 }
 
 askPeersOf = (peer) => {
     log('Ask peers list of ' + peer.id);
-    return request.send(peer, { action: "getPeers" })
+    return request.send(peer, { operation: "getPeers" })
         .catch(() => {
             log('Peer ' + peer.id + ' is not available');
             return [];
@@ -66,7 +70,7 @@ addPeer = (peer) => {
 };
 
 savePeers = () => {
-    log('Save peers');
+    log('Save ' + _peers.length + ' peers');
     return writeFile('./data/' + global.id + '-peers.json', JSON.stringify(_peers), 'utf8');
 };
 

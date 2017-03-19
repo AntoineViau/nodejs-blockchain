@@ -1,6 +1,7 @@
 let Promise = require("bluebird");
 let readFile = Promise.promisify(require("fs").readFile);
 let writeFile = Promise.promisify(require("fs").writeFile);
+let log = require('./utils/log.js');
 
 let domain = 256;
 let _keys = {};
@@ -8,23 +9,24 @@ let _keys = {};
 module.exports = {
 
     generateKeys: () => {
-        let pub = 1 + parseInt(global.id); //Math.floor(Math.random() * domain);
+        log('Generate keys');
+        let pub = 1 + parseInt(global.id);
         let priv = domain - pub;
-        return {
-            priv,
-            pub
-        };
+        _keys = { priv, pub };
+        return Promise.resolve(_keys);
     },
-    generateAndSaveKeys: () => {
-        let keys = module.exports.generateKeys();
-        return writeFile('./data/' + global.id + '-keys.json', JSON.stringify(keys), 'utf8');
+    getKeys: () => {
+        return _keys;
+    },
+    saveKeys: () => {
+        log('Save keys');
+        return writeFile('./data/' + global.id + '-keys.json', JSON.stringify(_keys), 'utf8');
     },
     loadKeys: () => {
-        return readFile('./data/' + global.id + '-keys.json', 'utf8')
-            .then(content => JSON.parse(content));
+        return readFile('./data/' + global.id + '-keys.json', 'utf8').then(content => _keys = JSON.parse(content));
     },
     crypt: (text, key) => {
-        return Array.from(text).map(c => (c.charCodeAt(0) + key) % domain).map(code => String.fromCharCode(code)).join('');
+        return Promise.resolve(Array.from(text).map(c => (c.charCodeAt(0) + key) % domain).map(code => String.fromCharCode(code)).join(''));
     },
     uncrypt: (text, key) => {
         return module.exports.crypt(text, key);
@@ -46,16 +48,17 @@ module.exports = {
             }
             sum += c.charCodeAt(0);
         });
-        return text.length.toString() + nbVoyelles.toString() + nbConsonnes.toString() + sum.toString();
+        let h = text.length.toString() + nbVoyelles.toString() + nbConsonnes.toString() + sum.toString();
+        return Promise.resolve(h);
     },
     sign: (text, privateKey) => {
         let hash = module.exports.hash(text);
         let signature = module.exports.crypt(hash, privateKey);
-        return signature;
+        return Promise.resolve(signature);
     },
     checkSignature: (text, signature, publicKey) => {
         let expectedHash = module.exports.hash(text);
         hash = module.exports.uncrypt(signature, publicKey);
-        return hash === expectedHash;
+        return Promise.resolve(hash === expectedHash);
     }
 }

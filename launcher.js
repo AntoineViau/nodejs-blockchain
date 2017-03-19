@@ -1,5 +1,7 @@
 var spawn = require('child_process').spawn;
 
+let nbPeers = process.argv[2] || (!console.error('Need nb peers') && process.exit(1));
+console.log('Starting ' + nbPeers + ' peers');
 
 function launch(id) {
     let prc = spawn('node', ['peer.js', id]);
@@ -15,6 +17,6 @@ function launch(id) {
 }
 
 launch(0);
-(new Array(3)).fill(null).map((val, index) => {
-    setTimeout(() => launch(index + 1), Math.floor(Math.random() * 5000))
+(new Array(nbPeers-1)).fill(null).map((val, index) => {
+    setTimeout(() => launch(index + 1), Math.floor(2000 + Math.random() * 2000))
 });

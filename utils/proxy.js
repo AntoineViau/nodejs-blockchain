@@ -16,6 +16,9 @@ http.createServer((req, res) => {
         body = Buffer.concat(body).toString();
         logs.push(JSON.parse(body));
         console.log('Received : ' + body);
+    })
+    .on('close',  () => {
+
     });
 }).listen(inputPort);
 console.log('Input server is listenning on ' + inputPort);

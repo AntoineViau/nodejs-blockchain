@@ -146,4 +146,15 @@ On peut alors envoyer un diff/patch de la base. Ce qui revient en fait à envoye
 Donc un peer reçoit une transaction, la valide et la renvoie au réseau, ie à tous ses peers.
 Lorsqu'un peer reçoit une nouvelle transaction, il procède de la même façon. A bout du compte chacun à la même version du livre.
 
+## Premier lancement
+On commence par récupérer la liste des peers.
+Si pas de database : 
+    On cherche le peer avec le plus de transactions.
+    On récupère sa database.
+Si pas de clef
+    on génère les clefs
+Si pas de compte
+    on crée le compte
+
+
 ## Premiers problèmes

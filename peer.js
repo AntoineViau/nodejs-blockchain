@@ -5,8 +5,11 @@ let log = require('./utils/log.js');
 let p2p = require('./p2p.js');
 let db = require('./db.js');
 let crypto = require('./keys.js');
+let request = require('./utils/request.js');
 
 global.id = process.argv[2] || (!console.error('Need port/id') && process.exit(1));
+
+log('Now starting peer ' + global.id);
 
 let reset = () => {
     log('Reset');
@@ -27,17 +30,19 @@ let launchServer = () => {
         }).on('end', () => {
             body = Buffer.concat(body).toString();
             let data = JSON.parse(body);
+            log('REQUEST: ', data.operation);
             switch (data.operation) {
                 case 'getPeers':
-                    log('REQUEST: getPeers');
                     p2p.addPeer({ id: data.origin });
                     res.end(JSON.stringify(p2p.getPeers()));
                     break;
                 case 'getNbTransactions':
-                    log('REQUEST: getNbTransactions');
                     res.end(JSON.stringify({
                         nbTransactions: db.getAccounts.nbTransactions
                     }));
+                case 'getDatabase':
+                    res.end(db.getAccounts());
+                    break;
                 case 'doTransaction':
                     let accountId = data.accountId;
                     let amount = data.amount;
@@ -64,22 +69,23 @@ let doTransaction = (accountId, amount) => {
 
 process.argv[3] === 'reset' && reset();
 
-let init = () => {
-    return new Promise((resolve, reject) => {
-        // Premier lancement ? On génère les clefs du compte
-        !fs.existsSync('./data/' + global.id + '-keys.json') && crypto.generateAndSaveKeys();
-        let keys = crypto.loadKeys()
-            .then(keys => {
-                // Pas de livre, on le crée avec le compte
-                !fs.exists('./data/' + global.id + '-db.json') && db.createAccount(keys.pub) && db.saveAccounts();
-            })
-        return resolve();
-    });
-
+let generateKeysIfNeeded = () => {
+    if (!fs.existsSync('./data/' + global.id + '-keys.json')) {
+        return crypto.generateKeys().then(() => crypto.saveKeys());
+    }
+    return Promise.resolve();
 }
 
-init().
-    then(() => p2p.updatePeers())
-    .then(() => db.loadAccounts())
-    .then(() => db.updateAccounts())
+let createAccountIfNeeded = () => {
+    if (!db.getAccount(global.id)) {
+        return db.createAccount();
+    }
+    return Promise.resolve();
+}
+
+
+Promise.resolve()
+    .then(() => p2p.updatePeersList())
+    .then(() => db.loadDatabase())
+    .then(() => createAccountIfNeeded())
     .then(() => launchServer());
