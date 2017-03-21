@@ -1,5 +1,4 @@
 let rp = require('request-promise-native');
-let log = require('./log.js');
 
 module.exports = {
     send: (peer, data) => {

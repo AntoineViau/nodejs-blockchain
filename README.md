@@ -146,15 +146,43 @@ On peut alors envoyer un diff/patch de la base. Ce qui revient en fait à envoye
 Donc un peer reçoit une transaction, la valide et la renvoie au réseau, ie à tous ses peers.
 Lorsqu'un peer reçoit une nouvelle transaction, il procède de la même façon. A bout du compte chacun à la même version du livre.
 
-## Premier lancement
-On commence par récupérer la liste des peers.
-Si pas de database : 
-    On cherche le peer avec le plus de transactions.
-    On récupère sa database.
-Si pas de clef
-    on génère les clefs
-Si pas de compte
-    on crée le compte
-
-
 ## Premiers problèmes
+Avec cette notion de compte il est impératif que la base de données soit synchronisée chez tous les peers au moment d'une transaction. Sinon, on peut se retrouver à envoyer une transaction sur un compte qui est connu par certains peers mais pas par d'autres. Première solution : s'assurer que la database est synchronisée en temps réel. En réalité c'est impossible car un réseau décentralisé est par définition instable dans le temps : aucune autorité centrale n'est là pour garantir la cohérence des données au travers de tous les noeuds. 
+
+
+
+Une solution : bloquer les transactions le temps que chacun soit synchronisé avec les autres. L'émetteur d'une transaction va donc l'envoyer à ses peers. Ils vont l'ajouter à une liste de transaction en attente. Une fois que ce *pool* de transactions atteint une certaine taille (disons 100), les transactions sont validées. 
+
+Si je reprends le fonctionnement du bitcoin : 
+réseau A B C D
+le peer A télécharge la blockchain auprès de B -> 5 blocks, A a donc 5 blocks
+Or C et D ont 6 blocks
+
+A se connecte a B mais ne voit pas C et D
+Il émet une transaction, l'ajoute à son pool et la broadcast
+C'est B qui reçoit, rajoute à son pool
+Les pools de A et B sont pleins 
+
+
+
+A émet une transaction vers B. Mais pas vers C qu'il ne connaît pas. Leurs pools sont complets
+
+
+Imaginons : 
+
+ - A émet une transaction vers ses peers connus : B et C
+ - B et C les émettent vers D et E
+ - 
+
+
+Transaction : le peer reçoit un transaction de l'adresse A vers l'adresse B. C'est un message chiffré avec la clef privée correspondant à A. Le message est en fait signé : message en clair + message chiffré.  
+Le peer voit que le message est valide donc c'est bien le proprio de A qui l'émet. Que fait-il s'il ne connaît pas l'adresse A ? En fait il la connaît. Que dit le message exactement ?
+
+*Moi Alice propriétaire de la clef publique A, donne x à la clef publique B.*
+
+Ce qui se traduirait par : 
+
+    { operation: "transaction", from: A, to: B, amout: x }
+
+A et B étant des clefs publiques, il suffit au peer qui reçoit le message de déchiffrer sa version chiffrée et de comparer à la version en claire. Si c'est le cas on sait que l'adresse A existe et qu'Alice est bien sa propriétaire. Mais comment s'assurer que le montant dispo sur A est suffisant ?
+

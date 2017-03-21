@@ -8,9 +8,9 @@ let _keys = {};
 
 module.exports = {
 
-    generateKeys: () => {
+    generateKeys: (id) => {
         log('Generate keys');
-        let pub = 1 + parseInt(global.id);
+        let pub = 1 + parseInt(id);
         let priv = domain - pub;
         _keys = { priv, pub };
         return Promise.resolve(_keys);
@@ -26,10 +26,22 @@ module.exports = {
         return readFile('./data/' + global.id + '-keys.json', 'utf8').then(content => _keys = JSON.parse(content));
     },
     crypt: (text, key) => {
-        return Promise.resolve(Array.from(text).map(c => (c.charCodeAt(0) + key) % domain).map(code => String.fromCharCode(code)).join(''));
+        return Promise.resolve(
+            Array.from(text)
+                .map(c => (c.charCodeAt(0) + key) % domain)
+                .map(code => code.toString(16))
+                .map(c => (c.length === 1 ? '0' : '') + c)
+                .join(' ')
+        );
     },
-    uncrypt: (text, key) => {
-        return module.exports.crypt(text, key);
+    uncrypt: (hexText, key) => {        
+        return Promise.resolve(
+            hexText.split(' ')
+                .map(hex => parseInt(hex, 16))
+                .map(code => (code + key) % domain)
+                .map(code => String.fromCharCode(code))
+                .join('')
+        );
     },
     hash: (text) => {
         let nbVoyelles = 0;
@@ -53,12 +65,11 @@ module.exports = {
     },
     sign: (text, privateKey) => {
         let hash = module.exports.hash(text);
-        let signature = module.exports.crypt(hash, privateKey);
-        return Promise.resolve(signature);
+        return module.exports.crypt(hash, privateKey);
     },
     checkSignature: (text, signature, publicKey) => {
         let expectedHash = module.exports.hash(text);
-        hash = module.exports.uncrypt(signature, publicKey);
-        return Promise.resolve(hash === expectedHash);
+        return module.exports.uncrypt(signature, publicKey)
+            .then(hash => hash === expectedHash);
     }
 }
