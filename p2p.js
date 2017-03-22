@@ -42,6 +42,7 @@ module.exports = {
     },
     broadcast: (fromId, toId, amount) => {
         log('Broadcast transaction from ' + fromId + ' to ' + toId + ' for an amount of ' + amount);
+        
         return Promise.each(
             knownPeers
                 .filter(knownPeer => knownPeer.id !== global.id)

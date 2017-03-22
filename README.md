@@ -146,43 +146,31 @@ On peut alors envoyer un diff/patch de la base. Ce qui revient en fait à envoye
 Donc un peer reçoit une transaction, la valide et la renvoie au réseau, ie à tous ses peers.
 Lorsqu'un peer reçoit une nouvelle transaction, il procède de la même façon. A bout du compte chacun à la même version du livre.
 
-## Premiers problèmes
-Avec cette notion de compte il est impératif que la base de données soit synchronisée chez tous les peers au moment d'une transaction. Sinon, on peut se retrouver à envoyer une transaction sur un compte qui est connu par certains peers mais pas par d'autres. Première solution : s'assurer que la database est synchronisée en temps réel. En réalité c'est impossible car un réseau décentralisé est par définition instable dans le temps : aucune autorité centrale n'est là pour garantir la cohérence des données au travers de tous les noeuds. 
+## Protéger le réseau
+<!--On a une base de données distribuée qui contient des comptes : accountId, publicKey, balance.
+Une node veut faire une transaction : 
+ - elle modifie sa db locale et génère le hash de la db après modif
+ - elle broadcast la transaction et le hash avec sa signature
+Une node qui reçoit l'info vérifie avec la signature que c'est bien la node propriétaire du compte qui émet la transaction. 
+Si oui, elle vérifie que l'opération est possible. 
+Si oui, elle modifie sa version de la database et broadcast à son tour la transaction.-->
+
+Dans notre système, si la majorité des nodes est dans les mains d'une seule personne, celle-ci peut modifier le livre à sa guise. Comment s'en protéger ?  
+On va demander à chaque node de résoudre un problème idiot afin que le coût de maintenance d'un grand nombre de node soit trop important pour rendre l'opération rentable : c'est la *proof-of-work* (POW).  
+
+La POW que l'on peut faire consiste à deviner un nombre. Pour cela on se base sur un hash. Par exemple, nous calculons le hash sur 16 bits de "Hello world" (Adler-16). Cela va donner un nombre allant de 0 à 65535.  
+Nous allons ensuite modifier notre chaîne "Hello world" en une nouvelle chaîne dont nous allons espérer que le hash soit inférieur à une certaine valeur. Plus cette valeur est petite plus la difficulté est grande.  
+
+**Exemple :**   
+Nous décidons d'avoir une difficulté élevée, il faudra trouver un nombre compris entre 0 et 100 à partir du hash de "Hello world". Nous allons ajouter un nombre (nonce) à notre chaîne et hasher le résultat. Tant que la valeur du hash est plus grande que 100, on recommence en incrémentant le nombre :   
+ * hash("Hello world0", 16) = 43393
+ * hash("Hello world1", 16) = 43650
+ * hash("Hello world2", 16) = 43907
+ * ...
+ * hash("Hello world592", 16) = 42 **BINGO !**
 
 
+Dans le cas de notre blockchain, comment choisir le hash de départ et la difficulté ?  
+Pour le hash on peut se baser sur n'importe quelle données instable dans le temps. Par exemple, la base de données elle-même. On la hash à chaque nouvelle modification et on se base sur cette valeur de départ pour trouver un nombre inférieur à notre base de difficulté.  
 
-Une solution : bloquer les transactions le temps que chacun soit synchronisé avec les autres. L'émetteur d'une transaction va donc l'envoyer à ses peers. Ils vont l'ajouter à une liste de transaction en attente. Une fois que ce *pool* de transactions atteint une certaine taille (disons 100), les transactions sont validées. 
-
-Si je reprends le fonctionnement du bitcoin : 
-réseau A B C D
-le peer A télécharge la blockchain auprès de B -> 5 blocks, A a donc 5 blocks
-Or C et D ont 6 blocks
-
-A se connecte a B mais ne voit pas C et D
-Il émet une transaction, l'ajoute à son pool et la broadcast
-C'est B qui reçoit, rajoute à son pool
-Les pools de A et B sont pleins 
-
-
-
-A émet une transaction vers B. Mais pas vers C qu'il ne connaît pas. Leurs pools sont complets
-
-
-Imaginons : 
-
- - A émet une transaction vers ses peers connus : B et C
- - B et C les émettent vers D et E
- - 
-
-
-Transaction : le peer reçoit un transaction de l'adresse A vers l'adresse B. C'est un message chiffré avec la clef privée correspondant à A. Le message est en fait signé : message en clair + message chiffré.  
-Le peer voit que le message est valide donc c'est bien le proprio de A qui l'émet. Que fait-il s'il ne connaît pas l'adresse A ? En fait il la connaît. Que dit le message exactement ?
-
-*Moi Alice propriétaire de la clef publique A, donne x à la clef publique B.*
-
-Ce qui se traduirait par : 
-
-    { operation: "transaction", from: A, to: B, amout: x }
-
-A et B étant des clefs publiques, il suffit au peer qui reçoit le message de déchiffrer sa version chiffrée et de comparer à la version en claire. Si c'est le cas on sait que l'adresse A existe et qu'Alice est bien sa propriétaire. Mais comment s'assurer que le montant dispo sur A est suffisant ?
-
+La difficulté doit être en adéquation avec la taille du réseau et la puissance mise à disposition par les technologies. On peut se base sur la taille de la base de données par exemple : on peut supposer que plus elle est importante, plus le réseau est grand.
