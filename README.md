@@ -1,12 +1,7 @@
 # Fabriquer sa propre BlockChain avec NodeJS
 
 ## Objectif 
-Fabriquer sa propre BlockChain en NodeJs en utilisant un process naïf et itératif : 
-
- * on met en place une solution simple
- * on observe ses failles
- * on corrige les failles et éventuellement on change tout
- * et on recommence
+Fabriquer sa propre BlockChain en NodeJs pour comprendre le comment et le pourquoi d'un tel système. Et pour cela, rien ne vaut le douloureux et magnifique cheminement du try-fail-fix-retry !
 
 ## Pourquoi une BlockChain ? 
 Quand des entités (personnes, sociétés, administrations, etc.) s'entendent sur une relation entre elles, elle doivent généralement passer par un tiers de confiance.  
