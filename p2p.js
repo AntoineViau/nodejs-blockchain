@@ -3,6 +3,7 @@ let readFile = Promise.promisify(require("fs").readFile);
 let writeFile = Promise.promisify(require("fs").writeFile);
 let request = require('./utils/request.js');
 let log = require('./utils/log.js');
+let db = require('./db.js');
 let _peers = [];
 
 module.exports = {
@@ -27,14 +28,16 @@ module.exports = {
     },
     getUpToDatePeer: () => {
         log('Get most up to date peer');
+        let localState = db.getState();
         let max = -1;
         let upToDatePeer = undefined;
         return Promise.each(
-            _peers.map(peer => askNbTransactionsOf(peer)),
-            (nbTransactions, index) => {
+            _peers.map(peer => askStateOf(peer)),
+            (remoteState, index) => {
+                if (remoteState)
                 upToDatePeer = upToDatePeer || _peers[index];
-                if (nbTransactions > max) {
-                    max = nbTransactions;
+                if (state > max) {
+                    max = state;
                     upToDatePeer = _peers[index];
                 }
             })
@@ -42,7 +45,6 @@ module.exports = {
     },
     broadcast: (fromId, toId, amount) => {
         log('Broadcast transaction from ' + fromId + ' to ' + toId + ' for an amount of ' + amount);
-        
         return Promise.each(
             knownPeers
                 .filter(knownPeer => knownPeer.id !== global.id)
@@ -66,7 +68,7 @@ loadKnownPeers = () => {
 
 askPeersOf = (peer) => {
     log('Ask peers list of ' + peer.id);
-    return request.send(peer, { origin: global.id, operation: 'getaddr' })
+    return request.send(peer, { origin: global.id, operation: 'getPeers' })
         .catch(() => {
             log('Peer ' + peer.id + ' is not available (getPeers)');
             return [];
@@ -84,12 +86,20 @@ savePeers = () => {
     return writeFile('./data/' + global.id + '-peers.json', JSON.stringify(_peers), 'utf8');
 };
 
-askNbTransactionsOf = (peer) => {
-    log('Ask nb transactions to ' + peer.id);
-    return request.send(peer.id, { operation: 'getNbTransactions' })
+askStateOf = (peer) => {
+    log('Ask state to ' + peer.id);
+    let _response;
+    return request.send(peer, { operation: 'getDatabase' })
+        .then(response => {
+            log(`getState to ${peer.id}`);
+            return response;
+        })
         .catch(() => {
-            log('Peer ' + peer.id + ' not available (nbTransactions)')
+            log(`Peer ${peer.id} not available (getState)`);
             return 0;
-        });
+        })
 };
 
+compareStates = (local, remote) => {
+
+};

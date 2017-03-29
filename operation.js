@@ -7,20 +7,27 @@ let crypto = require('./keys.js');
 
 module.exports = {
     process: (data) => {
-        //log('Origin: ' + data.origin + ', Process: ' + data.operation);
+
+        //log('Process: ' + JSON.stringify(data));
+
         switch (data.operation) {
 
-            case 'getaddr':
-                return p2p.addPeer({ id: data.origin })
-                    .then(() => JSON.stringify(p2p.getPeers()));
+            case 'getPeers':
+                return Promise.resolve(JSON.stringify(p2p.getPeers()));
+
+            case 'getState':
+                let state = db.getHash();
+                return Promise.resolve(JSON.stringify({ state }));
 
             case 'getNbTransactions':
-                return Promise.resolve(JSON.stringify({ nbTransactions: db.getAccounts.nbTransactions }));
+                return Promise.resolve(JSON.stringify({ nbTransactions: db.getNbTransactions() }));
 
             case 'getDatabase':
+                log('Process getDatabase: ' + response)
                 return Promise.resolve(JSON.stringify(db.getDatabase()));
 
             case 'transaction':
+                log('Process transaction: ' + JSON.stringify(data));
                 let publicKey = db.getAccount(data.fromId).publicKey;
                 let message = { operation: 'transaction', fromId: data.fromId, toId: data.toId, amount: data.amount };
                 let messageStr = JSON.stringify(message);

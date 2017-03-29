@@ -25,6 +25,19 @@
             font-weight: bold;
             font-size: 16px;
         }
+        
+        .node-transactions {
+            background: gray;
+            color: black;
+            padding: 5px;
+            text-align: right;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .log {
+            padding: 0.2em
+        }
     </style>
 </head>
 
@@ -33,28 +46,49 @@
     <script src="https://code.jquery.com/jquery-3.1.1.min.js" crossorigin="anonymous"></script>
 
     <script type="text/javascript">
+        var nodesIds = new Array();
         var nodes = new Array();
+
+        _fetchLogs = () => {
+            let init = { method: 'GET', headers: new Headers(), cache: 'default' };
+            let request = new Request('http://127.0.0.1:4002', init);
+            fetch(request, init)
+                .then(res => res.json())
+                .then(newLogs => {
+                    addNewNodes(newLogs);
+                    dispatchLogs(newLogs);
+                });
+        }
+
+        _fetchDbState = () => {
+            nodesIds.forEach(nodeId => {
+                let init = { method: 'POST', headers: new Headers(), cache: 'default', body: JSON.stringify({ operation: 'getState' }) };
+                let request = new Request('http://127.0.0.1:' + (5000 + parseInt(nodeId)), init);
+                fetch(request, init)
+                    .then(res => res.json())
+                    .then(dbState => {
+                        $(`#logs${nodeId} .node-transactions`).html(`State: ${dbState.state}`);
+                    });
+            });
+        }
 
         refresh = () => {
             setInterval(() => {
-                var init = { method: 'GET', headers: new Headers(), cache: 'default' };
-                var request = new Request('http://127.0.0.1:4002', init);
-                fetch(request, init)
-                    .then(res => res.json())
-                    .then(newLogs => {
-                        console.log('Received : ' + newLogs);
-                        addNewNodes(newLogs);
-                        dispatchLogs(newLogs);
-                    });
-
+                _fetchLogs();
+                _fetchDbState();
             }, 1000);
         };
 
         addNewNodes = (logs) => {
-            let nodesIds = Array.from(new Set(logs.map(log => log.from)));
+            nodesIds = Array.from(new Set(logs.map(log => log.from)));
             nodesIds.forEach(nodeId => {
                 if (!nodes[nodeId]) {
-                    let elmt = $('<div class="node" id="logs' + nodeId + '"><div class="node-title">Node ' + nodeId + '</div><div class="logs"></div></div>');
+                    let elmt = $(`
+                    <div class="node" id="logs${nodeId}">
+                        <div class="node-title">Node ${nodeId}</div>
+                        <div class="node-transactions"></div>
+                        <div class="logs"></div>
+                    </div>`);
                     $(document.body).append(elmt);
                     nodes[nodeId] = { from: nodeId, logs: [], elmt };
                 }
@@ -63,7 +97,7 @@
 
         dispatchLogs = (logs) => {
             logs.forEach(log => {
-                $('#logs' + log.from + ' .logs').prepend('<div class="log">' + log.log + '</div>');
+                $(`#logs${log.from} .logs`).prepend(`<div class="log">${log.log}</div>`);
             });
         };
 

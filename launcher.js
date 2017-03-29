@@ -14,6 +14,7 @@ function launch(id) {
     });
     prc.stderr.on('data', function (buf) {
         stderr += buf;
+        console.log('Err: '+stderr);
     });
     prc.on('close', function (code) {
         console.log('Peer ' + id + ' exited with code ' + code);
@@ -23,7 +24,7 @@ function launch(id) {
 
 launch(0);
 (new Array(nbPeers - 1)).fill(null).reduce((prev, cur, index) => {
-    let delay = prev + 250; //Math.floor(250 + Math.random() * 250);
+    let delay = prev + 1000; //Math.floor(250 + Math.random() * 250);
     setTimeout(() => launch(index + 1), delay);
     return delay;
 }, 0);

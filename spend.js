@@ -1,14 +1,21 @@
 let request = require('./utils/request.js');
 let crypto = require('./keys.js');
 
-let fromId = process.argv[2];
-let toId = process.argv[3];
-let amount = process.argv[4];
+let message = {
+    operation: 'transaction',
+    fromId: process.argv[2],
+    toId: process.argv[3],
+    amount: parseInt(process.argv[4])
+};
 let privateKey = parseInt(process.argv[5]);
 
-let message = { operation: 'transaction', fromId, toId, amount };
-let messageStr = JSON.stringify(message);
-crypto.crypt(messageStr, privateKey)
-    .then(signature => request.send({ id: fromId }, { operation: 'transaction', fromId, toId, amount, signature }))
-    .then(response => console.log(response));
-    
+
+crypto.crypt(JSON.stringify(message), privateKey)
+    .then(signature => {
+        let body = Object.assign({}, message, {signature});
+
+        console.log(body);
+        request.send({ id: message.fromId }, body);
+    })
+    .then(response => console.log('Response: ',response));
+

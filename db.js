@@ -6,8 +6,10 @@ let crypto = require('./keys.js');
 let fs = require('fs');
 let p2p = require('./p2p.js');
 let request = require('./utils/request.js');
+let md5 = require('md5');
 
 let _db = {
+    lastOperationTimestamp: 0,
     nbTransactions: 0,
     accounts: []
 }
@@ -26,13 +28,14 @@ module.exports = {
     fetchDatabase: () => {
         log('Fetch database');
         return p2p.getUpToDatePeer()
-            .then(peer => { if (!peer) throw 'No peer'; else return peer; })
-            .then(peer => request.send(peer, { operation: 'getDatabase' }))
-            .then(content => _db = JSON.parse(content))
-            .catch((msg) => { log('Could not fetch database'); })
+        // .then(peer => { if (!peer) throw 'No peer'; else return peer; })
+        // .then(peer => request.send(peer, { operation: 'getDatabase' }))
+        // .then(content => _db = JSON.parse(content))
+        // .catch((msg) => { log('Could not fetch database: '+msg); })
     },
     saveDatabase: () => {
         log('Save database');
+        _db.lastOperationTimestamp = (newDate()).getTime();
         return writeFile('./data/' + global.id + '-db.json', JSON.stringify(_db), 'utf8');
     },
     createAccount: (id) => {
@@ -43,6 +46,11 @@ module.exports = {
             .then(() => module.exports.saveDatabase());
     },
     getDatabase: () => _db,
+    getState: () => _db,
+    compareStates: (s1, s2) => {
+    },
+    getNbTransactions: () => _db.nbTransactions,
+    getAccounts: () => _db.accounts,
     getAccount: accountId => _db.accounts.find(account => account.id === accountId),
     transaction: (fromId, toId, amount) => {
         log('transaction from ' + fromId + ' to ' + toId + ' for an amount of ' + amount);

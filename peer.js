@@ -25,18 +25,24 @@ let launchServer = () => {
     log('LaunchServer');
     let port = 5000 + parseInt(global.id);
     http.createServer((req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.writeHead(200, { 'Content-Type': 'application/json' });
         var body = [];
-        req.on('data', (chunk) => {
-            body.push(chunk);
-        }).on('end', () => {
-            let data = JSON.parse(Buffer.concat(body).toString());
-            //log('data: ' + Buffer.concat(body).toString());
-            p2p.addPeer({ id: data.origin })
-                .then(() => operation.process(data))
-                .then(responseContent => res.end(responseContent));
-        });
-    }).listen(port);
-    log('Listening on port ' + port);
+        req
+            .on('data', chunk => body.push(chunk))
+            .on('end', () => {
+                let data = JSON.parse(Buffer.concat(body).toString());
+                p2p.addPeer({ id: data.origin })
+                    .then(() => operation.process(data))
+                    .then(responseContent => {
+                        //log('Response : ' + responseContent);
+                        res.end(responseContent)
+                    });
+            });
+    })
+        .listen(port)
+        .on('error', e => console.log(`Server error: ${e}`))
+    log(`Listening on port ${port}`);
 }
 
 process.argv[3] === 'reset' && reset();
@@ -52,4 +58,10 @@ Promise.resolve()
     .then(() => p2p.updatePeersList())
     .then(() => db.loadDatabase())
     .then(() => createAccountIfNeeded())
-    .then(() => launchServer());
+    .then(() => launchServer())
+    .then(() => {
+        setInterval(() => {
+            log('Refresh peers and database');
+            p2p.updatePeersList().then(() => db.loadDatabase());
+        }, 1000 * 60);
+    });
