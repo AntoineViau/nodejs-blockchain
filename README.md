@@ -197,30 +197,39 @@ Pour cela, nous allons "verrouiller" l'historique en chaînant les transactions 
 On le voit, le hash de chaque nouvelle transaction dépend de la précédente, dont le hash dépend lui-même de la précédente, et ainsi de suite. 
 
 ## Le point sur les attaques possibles
-A présent notre Vilain émet une transaction illégale (fonds insuffisants) et l'envoie sur le réseau. Chaque peer consulte son historique de transactions et voit l'illégalité : la transaction est refusée.
+Notre Vilain émet une transaction illégale (fonds insuffisants) et l'envoie sur le réseau. Chaque peer consulte son historique de transactions, reconstitue le solde du Vilain et constate l'illégalité : la transaction est refusée.
 
 Le Vilain veut modifier une transaction qu'il a reçue. Comme la transaction est signée il ne peut pas la trafiquer. 
 
-Le Vilain joue l'asychronicité du réseau : il émet une première transaction, puis une seconde qui est illégale (fonds insuffisants). Une partie du réseau traite la première, une autre traite la seconde. Ce type d'attaque est appelée "double dépense".
+Le Vilain modifie sa version du livre. Pour cela il doit recalculer tous les hash de toutes les transactions à partir de celle qu'il a modifié. Il ré-écrit donc l'histoire à partir d'un certain moment. S'il détient une majorité du réseau il peut l'empoisonner progressivement pour que sa version du livre soit celle qui domine. Nous allons voir comment contrer cela.
+
+Le Vilain joue l'asychronicité du réseau : il émet une première transaction, puis une seconde qui est illégale (fonds insuffisants). Une partie du réseau traite la première, une autre traite la seconde. Séparément ces transactions sont valides. Ensemble elles ne devraient pas passer : Alice possède 100, dépense 70 sur une transaction, puis 50 sur une seconde. Ce type d'attaque est appelée "double dépense".  
+Elle ne pose problème que si l'on fait confiance trop tôt à un peer. En effet, l'une des deux transactions va se répandre plus vite que l'autre sur le réseau. En allant plus vite, et avec l'addition de nouvelles transactions, on trouvera une chaîne de transactions plus longue chez certains peers. Ca sera celle-ci qui fera office de vérité.  
+L'attaque n'est effective que si on ne laisse pas le temps aux tentatives de double dépense d'être "absorbée" par le réseau.  
+On remarque qu'un Vilain en possession d'une majorité du réseau est en mesure de faire des double dépenses.
 
 ## Protéger le réseau
-Dans notre système, si la majorité des nodes est dans les mains d'une seule personne, celle-ci peut modifier le livre à sa guise. Comment s'en protéger ?  
-On va demander à chaque node de résoudre un problème idiot afin que le coût de maintenance d'un grand nombre de node soit trop important pour rendre l'opération rentable : c'est la *proof-of-work* (POW).  
+Il faut protéger notre réseau d'une éventuelle mainmise sur une majorité de peers.  
+Chaque fois qu'un peer veut modifier le livre (traiter une transaction) on va lui demander de résoudre un problème. Celui-ci doit être suffisamment coûteux en ressources afin que le coût de maintenance d'un grand nombre de peers soit trop important pour rendre l'opération rentable : c'est la *proof-of-work* (POW).  
 
-La POW que l'on peut faire consiste à deviner un nombre. Pour cela on se base sur un hash. Par exemple, nous calculons le hash sur 16 bits de "Hello world" (Adler-16). Cela va donner un nombre allant de 0 à 65535.  
+Une POW possibile consiste à deviner un nombre. Pour cela on se base sur un hash. Par exemple, nous calculons le hash sur 16 bits de "Hello world". Cela va donner un nombre allant de 0 à 65535.  
 Nous allons ensuite modifier notre chaîne "Hello world" en une nouvelle chaîne dont nous allons espérer que le hash soit inférieur à une certaine valeur. Plus cette valeur est petite plus la difficulté est grande.  
 
 **Exemple :**   
 Nous décidons d'avoir une difficulté élevée, il faudra trouver un nombre compris entre 0 et 100 à partir du hash de "Hello world". Nous allons ajouter un nombre (nonce) à notre chaîne et hasher le résultat. Tant que la valeur du hash est plus grande que 100, on recommence en incrémentant le nombre :   
- * hash("Hello world0", 16) = 43393
- * hash("Hello world1", 16) = 43650
- * hash("Hello world2", 16) = 43907
+ * hash("Hello world0") = 43393
+ * hash("Hello world1") = 43650
+ * hash("Hello world2") = 43907
  * ...
- * hash("Hello world592", 16) = 42 **BINGO !**
+ * hash("Hello world592") = 42 **BINGO !**
 
-
-Dans le cas de notre blockchain, comment choisir le hash de départ et la difficulté ?  
+Dans le cas de notre BlockChain, comment choisir le hash de départ et la difficulté ?  
 Pour le hash on peut se baser sur n'importe quelle données instable dans le temps. Par exemple, la base de données elle-même. On la hash à chaque nouvelle modification et on se base sur cette valeur de départ pour trouver un nombre inférieur à notre repère de difficulté.  
 
 La difficulté doit être en adéquation avec la taille du réseau et la puissance mise à disposition par les technologies. On peut utiliser la taille de la base de données par exemple : on peut supposer que plus elle est importante, plus le réseau est grand, plus il y a les ressources pour affronter la POW.
 
+Un peer qui a résolu en premier la POW va pouvoir modifier le livre en ajoutant la transaction. Au passage il insère sa solution trouvée. Ce faisant, il sécurise encore plus notre BlockChain : chacun peut vérifier qu'il a effectivement fait la POW qui correspond à la transaction. 
+
+## Les blocs
+Dans notre système, chaque transaction doit être validée individuellement par une POW. Comme les transactions sont chaînées entre elles, nous avons une scalabilité catastrophique.  
+Pour que notre réseau soit efficace, nous allons réunir les transactions dans des blocs. Une fois un bloc rempli, la POW est appliqué dessus, et on chaîne les blocs entre eux comme nous le faisions avec les transactions. Nous avons alors littéralement une chaîne de blocs : une *BlockChain*.
