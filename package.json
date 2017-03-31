@@ -5,6 +5,7 @@
   "main": "db.js",
   "dependencies": {
     "bluebird": "^3.5.0",
+    "md5": "^2.2.1",
     "node-static": "^0.7.9",
     "request": "^2.81.0",
     "request-promise-native": "^1.0.3",
