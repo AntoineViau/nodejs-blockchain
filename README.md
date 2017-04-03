@@ -138,45 +138,45 @@ Donc un peer reçoit une transaction, la valide et la renvoie au réseau, ie à 
 Lorsqu'un peer reçoit une nouvelle transaction, il procède de la même façon. A bout du compte chacun à la même version du livre.
 
 ## Problèmes conceptuels
-Nous n'avons pas encore traité sérieusement la synchronisation de la base de données. Compter les transactions est n'est absolument pas viable : notre réseau est  - par nature - asynchrone, et notre livre évolue. On a donc une double mutabilité : spatiale (le réseau) et temporelle (la base). Concrètement, à un moment donné un peer peut avoir 10 transactions, un autre peut aussi avoir 10 transactions, alors que ce ne sont pas les mêmes. Il y a deux états qui sont potentiellement impossible à fusionner.  
-Imaginons : Alice possède 100, elle émet une transaction de 70, et pendant qu'une partie du réseau la traite elle en émet une seconde pour 50, ce qui devrait être interdit. Une autre partie du réseau pourra valider cette seconde transaction si elle a n'a pas encore vu la première. Une fusion provoquerait une incohérence grave dans la base.  
+Nous n'avons pas encore traité sérieusement la synchronisation de la base de données. Compter les transactions est n'est absolument pas viable : notre réseau est  - par nature - asynchrone, et notre livre évolue. On a donc une double mutabilité : spatiale (le réseau) et temporelle (la base). Concrètement, à un moment donné un peer peut avoir 10 transactions, un autre peut aussi avoir 10 transactions, alors que ce ne sont pas (ou partiellement) les mêmes. Il y a deux états qui sont potentiellement impossible à fusionner.  
+La source du problème vient du fait que nous voyons notre livre comme un état global et mutable : il évolue dans le temps et on perd son historique.  
 
-De plus, nous imaginons un monde parfait où personne ne triche. Or, rien n'empêche un Vilain de modifier sa version du livre (soldes, clefs), et la mettre à disposition des autres peers.  
+On peut mettre de côté la mutabilité en rendant le livre immutable : les données ne sont pas modifiées, il n'y a que des ajouts. On stocke alors un historique de comptes bancaires :
 
-## Immutabilité
-Pour résoudre ces deux problèmes, il faut faire deux choses : 
-
- * Rendre notre base immutable. Si nous stockons l'historique des comptes, la fusion devient possible.
- * Protéger l'historique contre la falsification.
-
-Notre base devient donc une liste d'états des comptes, un tableau de tableaux de comptes : 
-
-    [
-        [{id: 25, balance: 100}, {id: 30, balance: 60}, ... ],
-        [{id: 25, balance: 150}, {id: 30, balance: 10}, ... ],
+    accountsHistory: [
+        [ { id: "1", balance: 100}, { id: "2", balance: 100}, { id: "3", balance: 100}, ... ],
+        [ { id: "1", balance: 120}, { id: "2", balance:  80}, { id: "3", balance: 100}, ... ],
+        [ { id: "1", balance: 110}, { id: "2", balance:  80}, { id: "3", balance: 110}, ... ],
         ...
     ]
 
-Mais notre idée de fusion n'est toujours pas viable. Les comptes bancaires n'indiquent pas les transactions et ne donnent pas assez d'information. Par exemple, si nous avons trois comptes A, B et C avec pour soldes A=100, B=200, C=300. Imaginons qu'une partie du réseau reçoivent ces transactions : 
+Dans ce système, les peers reçoivent les transactions, les appliquent à la dernière version du livre de leur historique. Ils peuvent ensuite échanger celui-ci avec le reste du réseau. Les peers ayant l'historique le plus important sont les référents pour les autres. Cela fonctionne à condition que les décalages entre les différentes partie du réseau ne concernent que des comptes différents : 
 
-    A -> 10 -> B, A=90, B=210, C=300
-    B -> 20 -> C, A=90, B=190, C=320
-    C -> 30 -> A, A=120,B=190, C=290 
+ * si A, B, C, D, E sont des comptes
+ * si N1 est une sous-partie du réseau
+ * si N2 est une autre sous-partie du réseau
+ * N1 reçoit A->B, B->C et met à jour l'historique en conséquence 
+ * N2 reçoit D->E et fait de même
+ * quand N1 et N2 s'échangent leurs historiques, pas de problème : ils ne travaillent pas sur les mêmes comptes.
+ 
+Mais si N2 reçoit A->C ? Et à quel moment ?  
+On a alors un risque de double dépense : comme on ne connaît pas l'ordre des transactions, on ne sait dans quel ordre les appliquer. Le compte A peut se retrouver à transférer plus d'argent qu'il n'en possède. On pourrait ajouter un timestamp sur chaque version de l'historique ? Mais ça ne changerait rien puisque les diverses transactions qui génèrent l'historique arrivent à des moments différents.  
+Les comptes bancaires ne sont que la finalité des transactions effectuées entre eux. A eux seuls ils ne fournissent pas assez d'information pour maintenir notre livre dans un état cohérent. Ces informations sont toutes contenues dans les transactions.    
+En revanche, on peut donc déduire l'état des comptes à n'importe quel moment en additionnant les transactions.  
+**Nous allons laisser tomber le stockage des comptes pour ne stocker que les transactions.**  
 
-Et une autre partie du réseau reçoit :
+## Faire et protéger l'Histoire
+Dans notre nouveau système il n'y a plus d'échange de livres. Les transactions sont envoyées sur le réseau et inscrites par chaque peer qui les valident. En cas de double dépense, une partie du réseau aura raison et l'autre tort. La partie la plus rapide va se répandre sur une plus grande surface et prendre le pas sur l'autre. Pour prendre un exemple :
 
-    B -> 10 -> C, A=100, B=190, C=310
-    C -> 20 -> A, A=120, B=190, C=290
+ * le compte A possède 100 
+ * il envoie 80 à B (transaction T1)
+ * puis très vite 40 à C (transaction T2)
 
-Le résultat final est le même : A=120, B=190, C=290  
-Et pourtant ce sont des transactions différentes !
-Un Vilain pourrait jouer sur manque d'information pour voler de l'argent.
+Imaginons que T1 se répande plus vite sur le réseau recouvre la surface N1 (sous-réseau). Tout peer qui proposera T2 à N1 se verra refuser cette transaction (plus assez de fond sur le compte A). La partie N2 qui avait accepté T2 va se trouver en minorité. Et elle va s'en rendre compte parce que N1 va continuer de recevoir de nouvelles transactions. N2 saura qu'elle est en retard en comptant le nombre de transactions, et devra donc abandonner ses propres transactions pour prendre celles de N1.  
 
-## Tout est transaction
-Les comptes bancaires ne sont que la finalité des transactions effectuées entre eux. On peut donc déduire l'état des comptes à n'importe quel moment avec la liste des transactions effectuées.  
-Nous allons laisser tomber le stockage des comptes pour ne stocker que les transactions.  
+Pour valider un tel fonctionnement, il faut ordonner les transactions.
 
-Il nous faut à présent protéger l'historique des transactions. En effet, à ce stade notre livre de transactions reste falsifiable par un Vilain. Il faut trouver un moyen pour qu'une modification de l'historique soit immédiatement repérée par les peers honnêtes.  
+Il nous faut protéger l'historique des transactions. En effet, à ce stade notre livre de transactions reste falsifiable par un Vilain et il n'y a pas moyen de la savoir. Il faut trouver un moyen pour qu'une modification de l'historique soit immédiatement repérée par les peers honnêtes.  
 Pour cela, nous allons "verrouiller" l'historique en chaînant les transactions entre elles : 
 
  * la toute première transaction arrive sur le réseau :   
