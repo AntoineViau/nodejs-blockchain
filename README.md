@@ -173,7 +173,7 @@ Dans notre nouveau système il n'y a plus d'échange de livres. Les transactions
 
 Imaginons que T1 se répande plus vite sur le réseau recouvre la surface du sous-réseau N1. Tout peer qui proposera T2 à N1 se la verra refusée (plus assez de fond sur le compte A). Le sous-réseau N2 qui avait accepté T2 va se trouver en minorité. Et elle va s'en rendre compte parce que N1 va continuer de recevoir de nouvelles transactions. N2 saura qu'elle est en retard en comptant le nombre de transactions de N1, et devra donc abandonner les siennes pour prendre celles de N1.  
 
-Il nous faut protéger l'historique des transactions. En effet, à ce stade notre livre de transactions reste falsifiable par un Vilain et il n'y a pas moyen de la savoir. Il faut trouver un moyen pour qu'une modification de l'historique soit immédiatement repérée par les peers honnêtes.  
+Il nous faut protéger l'historique des transactions. En effet, à ce stade notre livre de transactions reste falsifiable par un Vilain et il n'y a pas moyen de le savoir. Il faut trouver un moyen pour qu'une modification de l'historique soit immédiatement repérée par les peers honnêtes.  
 Pour cela, nous allons "verrouiller" l'historique en chaînant les transactions entre elles : 
 
  * la toute première transaction arrive sur le réseau :   
@@ -191,12 +191,12 @@ Pour cela, nous allons "verrouiller" l'historique en chaînant les transactions 
  `T2 = { hash: H2, operation: "transaction", from: "123", to: "456", amount: "789" }`
  * et on recommence pour les transactions suivantes...
 
-On le voit, le hash de chaque nouvelle transaction dépend de la précédente, dont le hash dépend lui-même de la précédente, et ainsi de suite. 
+On le voit, le hash de chaque nouvelle transaction dépend de la précédente, dont le hash dépend lui-même de la précédente, et ainsi de suite. Si un Vilain modifie une transaction, il va devoir reconstituer toute la chaîne depuis son point de modification.
 
 ## Le point sur les attaques possibles
-Notre Vilain émet une transaction illégale (fonds insuffisants) et l'envoie sur le réseau. Chaque peer consulte son historique de transactions, reconstitue le solde du Vilain et constate l'illégalité : la transaction est refusée.
-
 Le Vilain veut modifier une transaction qu'il a reçue. Comme la transaction est signée il ne peut pas la trafiquer. 
+
+Notre Vilain émet une transaction illégale (fonds insuffisants) et l'envoie sur le réseau. Chaque peer consulte son historique de transactions, reconstitue le solde du Vilain et constate l'illégalité : la transaction est refusée.
 
 Le Vilain modifie sa version du livre. Pour cela il doit recalculer tous les hash de toutes les transactions à partir de celle qu'il a modifié. Il ré-écrit donc l'histoire à partir d'un certain moment. S'il détient une majorité du réseau il peut l'empoisonner progressivement pour que sa version du livre soit celle qui domine. Nous allons voir comment contrer cela.
 
