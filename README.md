@@ -138,7 +138,7 @@ Donc un peer reçoit une transaction, la valide et la renvoie au réseau, ie à 
 Lorsqu'un peer reçoit une nouvelle transaction, il procède de la même façon. A bout du compte chacun à la même version du livre.
 
 ## Problèmes conceptuels
-Nous n'avons pas encore traité sérieusement la synchronisation de la base de données. Compter les transactions est n'est absolument pas viable : notre réseau est  - par nature - asynchrone, et notre livre évolue. On a donc une double mutabilité : spatiale (le réseau) et temporelle (la base). Concrètement, à un moment donné un peer peut avoir 10 transactions, un autre peut aussi avoir 10 transactions, alors que ce ne sont pas (ou partiellement) les mêmes. Il y a deux états qui sont potentiellement impossible à fusionner.  
+Nous n'avons pas encore traité sérieusement la synchronisation de la base de données. Compter les transactions n'est absolument pas viable : notre réseau est  - par nature - asynchrone, et notre livre évolue. On a donc une double mutabilité : spatiale (le réseau) et temporelle (la base). Concrètement, à un moment donné un peer peut avoir 10 transactions, un autre peut aussi avoir 10 transactions, alors que ce ne sont pas (ou partiellement) les mêmes. Il y a deux états qui sont potentiellement impossible à fusionner.  
 La source du problème vient du fait que nous voyons notre livre comme un état global et mutable : il évolue dans le temps et on perd son historique.  
 
 On peut mettre de côté la mutabilité en rendant le livre immutable : les données ne sont pas modifiées, il n'y a que des ajouts. On stocke alors un historique de comptes bancaires :
@@ -152,29 +152,26 @@ On peut mettre de côté la mutabilité en rendant le livre immutable : les donn
 
 Dans ce système, les peers reçoivent les transactions, les appliquent à la dernière version du livre de leur historique. Ils peuvent ensuite échanger celui-ci avec le reste du réseau. Les peers ayant l'historique le plus important sont les référents pour les autres. Cela fonctionne à condition que les décalages entre les différentes partie du réseau ne concernent que des comptes différents : 
 
- * si A, B, C, D, E sont des comptes
+ * si A, B, C, D, E sont des comptes. A possède un solde de 100.
  * si N1 est une sous-partie du réseau
  * si N2 est une autre sous-partie du réseau
- * N1 reçoit A->B, B->C et met à jour l'historique en conséquence 
- * N2 reçoit D->E et fait de même
+ * N1 reçoit A-70->B, B-20->C et met à jour l'historique en conséquence 
+ * N2 reçoit D-10->E et fait de même
  * quand N1 et N2 s'échangent leurs historiques, pas de problème : ils ne travaillent pas sur les mêmes comptes.
  
-Mais si N2 reçoit A->C ? Et à quel moment ?  
-On a alors un risque de double dépense : comme on ne connaît pas l'ordre des transactions, on ne sait dans quel ordre les appliquer. Le compte A peut se retrouver à transférer plus d'argent qu'il n'en possède. On pourrait ajouter un timestamp sur chaque version de l'historique ? Mais ça ne changerait rien puisque les diverses transactions qui génèrent l'historique arrivent à des moments différents.  
-Les comptes bancaires ne sont que la finalité des transactions effectuées entre eux. A eux seuls ils ne fournissent pas assez d'information pour maintenir notre livre dans un état cohérent. Ces informations sont toutes contenues dans les transactions.    
-En revanche, on peut donc déduire l'état des comptes à n'importe quel moment en additionnant les transactions.  
-**Nous allons laisser tomber le stockage des comptes pour ne stocker que les transactions.**  
+Mais si N2 reçoit A-50->C ? Une des deux transactions issues de A est invalide. Mais cette *double dépense* est impossible à détecter puisqu'on ne connaît que le résultat des transactions : les soldes des comptes. Même si on ajoute un timestamp sur chaque historique, il nous manque toujours l'information principale : les transactions. Tout ce qu'on sait : à un moment donné, sur telle partie du réseau la transaction est valide. Mais ça ne suffit pour la valider sur l'ensemble du réseau !  
+
+Il faut pallier au manque d'information inhérent à l'emploi de comptes bancaires et aller à la source des soldes : **nous allons désormais stocker les transactions**.  
+Les soldes des comptes seront facile à déduire : il suffit d'additionner les transactions.
 
 ## Faire et protéger l'Histoire
-Dans notre nouveau système il n'y a plus d'échange de livres. Les transactions sont envoyées sur le réseau et inscrites par chaque peer qui les valident. En cas de double dépense, une partie du réseau aura raison et l'autre tort. La partie la plus rapide va se répandre sur une plus grande surface et prendre le pas sur l'autre. Pour prendre un exemple :
+Dans notre nouveau système il n'y a plus d'échange de livres. Les transactions sont envoyées sur le réseau et inscrites par chaque peer qui les valide. En cas de double dépense, une partie du réseau aura raison et l'autre tort. La partie la plus rapide va se répandre sur une plus grande surface et prendre le pas sur l'autre. Pour prendre un exemple :
 
  * le compte A possède 100 
  * il envoie 80 à B (transaction T1)
  * puis très vite 40 à C (transaction T2)
 
-Imaginons que T1 se répande plus vite sur le réseau recouvre la surface N1 (sous-réseau). Tout peer qui proposera T2 à N1 se verra refuser cette transaction (plus assez de fond sur le compte A). La partie N2 qui avait accepté T2 va se trouver en minorité. Et elle va s'en rendre compte parce que N1 va continuer de recevoir de nouvelles transactions. N2 saura qu'elle est en retard en comptant le nombre de transactions, et devra donc abandonner ses propres transactions pour prendre celles de N1.  
-
-Pour valider un tel fonctionnement, il faut ordonner les transactions.
+Imaginons que T1 se répande plus vite sur le réseau recouvre la surface du sous-réseau N1. Tout peer qui proposera T2 à N1 se la verra refusée (plus assez de fond sur le compte A). Le sous-réseau N2 qui avait accepté T2 va se trouver en minorité. Et elle va s'en rendre compte parce que N1 va continuer de recevoir de nouvelles transactions. N2 saura qu'elle est en retard en comptant le nombre de transactions de N1, et devra donc abandonner les siennes pour prendre celles de N1.  
 
 Il nous faut protéger l'historique des transactions. En effet, à ce stade notre livre de transactions reste falsifiable par un Vilain et il n'y a pas moyen de la savoir. Il faut trouver un moyen pour qu'une modification de l'historique soit immédiatement repérée par les peers honnêtes.  
 Pour cela, nous allons "verrouiller" l'historique en chaînant les transactions entre elles : 
@@ -213,7 +210,8 @@ Il faut protéger notre réseau d'une éventuelle mainmise sur une majorité de 
 Chaque fois qu'un peer veut modifier le livre (traiter une transaction) on va lui demander de résoudre un problème. Celui-ci doit être suffisamment coûteux en ressources afin que le coût de maintenance d'un grand nombre de peers soit trop important pour rendre l'opération rentable : c'est la *proof-of-work* (POW).  
 
 Une POW possibile consiste à deviner un nombre. Pour cela on se base sur un hash. Par exemple, nous calculons le hash sur 16 bits de "Hello world". Cela va donner un nombre allant de 0 à 65535.  
-Nous allons ensuite modifier notre chaîne "Hello world" en une nouvelle chaîne dont nous allons espérer que le hash soit inférieur à une certaine valeur. Plus cette valeur est petite plus la difficulté est grande.  
+Nous allons ensuite modifier notre chaîne "Hello world" en une nouvelle chaîne dont nous allons espérer que le
+ hash soit inférieur à une certaine valeur. Plus cette valeur est petite plus la difficulté est grande.  
 
 **Exemple :**   
 Nous décidons d'avoir une difficulté élevée, il faudra trouver un nombre compris entre 0 et 100 à partir du hash de "Hello world". Nous allons ajouter un nombre (nonce) à notre chaîne et hasher le résultat. Tant que la valeur du hash est plus grande que 100, on recommence en incrémentant le nombre :   
