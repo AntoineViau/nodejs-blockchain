@@ -159,10 +159,20 @@ Dans ce système, les peers reçoivent les transactions, les appliquent à la de
  * N2 reçoit D-10->E et fait de même
  * quand N1 et N2 s'échangent leurs historiques, pas de problème : ils ne travaillent pas sur les mêmes comptes.
  
-Mais si N2 reçoit A-50->C ? Une des deux transactions issues de A est invalide. Mais cette *double dépense* est impossible à détecter puisqu'on ne connaît que le résultat des transactions : les soldes des comptes. Même si on ajoute un timestamp sur chaque historique, il nous manque toujours l'information principale : les transactions. Tout ce qu'on sait : à un moment donné, sur telle partie du réseau la transaction est valide. Mais ça ne suffit pour la valider sur l'ensemble du réseau !  
+Mais si N2 reçoit A-50->C ? Une des deux transactions issues de A est invalide puisque 70 + 50 > 100. Mais cette *double dépense* est impossible à détecter puisqu'on ne connaît que le résultat des transactions : les soldes des comptes. Même si on ajoute un timestamp sur chaque historique, il nous manque toujours l'information principale : les transactions. Tout ce qu'on sait : à un moment donné, sur telle partie du réseau la transaction est valide. Mais ça ne suffit pour la valider sur l'ensemble du réseau !  
 
 Il faut pallier au manque d'information inhérent à l'emploi de comptes bancaires et aller à la source des soldes : **nous allons désormais stocker les transactions**.  
-Les soldes des comptes seront facile à déduire : il suffit d'additionner les transactions.
+Les soldes des comptes seront facile à déduire : il suffit d'additionner les transactions.  
+Désormais notre livre prend cette forme :
+
+    {
+        transactions: [
+            { from: "123", to: "456", amount: 100 },
+            { from: "789", to: "852", amount: 180 },
+            { from: "357", to: "412", amount: 320 },
+            ...
+        ]
+    }
 
 ## Faire et protéger l'Histoire
 Dans notre nouveau système il n'y a plus d'échange de livres. Les transactions sont envoyées sur le réseau et inscrites par chaque peer qui les valide. En cas de double dépense, une partie du réseau aura raison et l'autre tort. La partie la plus rapide va se répandre sur une plus grande surface et prendre le pas sur l'autre. Pour prendre un exemple :
@@ -172,6 +182,11 @@ Dans notre nouveau système il n'y a plus d'échange de livres. Les transactions
  * puis très vite 40 à C (transaction T2)
 
 Imaginons que T1 se répande plus vite sur le réseau recouvre la surface du sous-réseau N1. Tout peer qui proposera T2 à N1 se la verra refusée (plus assez de fond sur le compte A). Le sous-réseau N2 qui avait accepté T2 va se trouver en minorité. Et elle va s'en rendre compte parce que N1 va continuer de recevoir de nouvelles transactions. N2 saura qu'elle est en retard en comptant le nombre de transactions de N1, et devra donc abandonner les siennes pour prendre celles de N1.  
+
+<!-- 
+Question : à ce stade, est ce que je peux me passer du chaînage ? Est-ce que l'ordre des transactions compte ? 
+A priori oui.
+-->
 
 Il nous faut protéger l'historique des transactions. En effet, à ce stade notre livre de transactions reste falsifiable par un Vilain et il n'y a pas moyen de le savoir. Il faut trouver un moyen pour qu'une modification de l'historique soit immédiatement repérée par les peers honnêtes.  
 Pour cela, nous allons "verrouiller" l'historique en chaînant les transactions entre elles : 
